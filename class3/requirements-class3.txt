@@ -1,0 +1,36 @@
+# Class 3 — Non-Functional Testing & AI Security
+# Extends class2 requirements with new dependencies for benchmarking and security
+# Run: pip install -r class3/requirements-class3.txt
+
+# === Core ML (same pins as class2) ===
+torch==2.1.0
+torchvision==0.16.0
+numpy==1.24.3
+Pillow==10.1.0
+
+# === API Framework ===
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+requests==2.31.0
+httpx==0.25.2
+
+# === Testing ===
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-html==4.1.1          # Generates HTML test reports: pytest --html=report.html
+
+# === Data Analysis & Visualization ===
+pandas==2.1.3
+matplotlib==3.8.0
+seaborn==0.13.0
+
+# === Class 3 New Dependencies ===
+python-jose[cryptography]==3.3.0   # JWT token creation and verification
+bcrypt>=4.0.0                      # Password hashing (direct, no passlib needed)
+psutil==5.9.6                      # Cross-platform memory & process profiling
+
+# === Utilities ===
+python-dotenv==1.0.0
+ipykernel==6.26.0                  # Jupyter kernel for notebooks
