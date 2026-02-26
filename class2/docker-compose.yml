@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # ======================== FastAPI Backend ========================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: adas-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      - HOST=0.0.0.0
+      - PYTHONUNBUFFERED=1
+      # Azure ML Configuration (override these with actual values)
+      - AZURE_ML_WORKSPACE=${AZURE_ML_WORKSPACE}
+      - AZURE_ML_SUBSCRIPTION=${AZURE_ML_SUBSCRIPTION}
+      - AZURE_ML_RESOURCE_GROUP=${AZURE_ML_RESOURCE_GROUP}
+      - LOCAL_MODEL_PATH=/app/models
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - adas-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ======================== Streamlit Frontend ========================
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    container_name: adas-streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - API_BASE_URL=http://api:8000
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - api
+    restart: unless-stopped
+    volumes:
+      - ./streamlit_app.py:/app/streamlit_app.py
+    networks:
+      - adas-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  adas-network:
+    driver: bridge
+
+volumes:
+  models:
+  logs:
+
+# ======================== Usage ========================
+# Build and run:
+#   docker-compose up -d --build
+#
+# Access:
+#   API: http://localhost:8000/docs
+#   Streamlit: http://localhost:8501
+#
+# View logs:
+#   docker-compose logs -f api
+#   docker-compose logs -f streamlit
+#
+# Stop:
+#   docker-compose down
