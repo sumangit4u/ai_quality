@@ -15,6 +15,7 @@ import logging
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -25,7 +26,7 @@ import torch.nn as nn
 import torchvision.transforms as transforms
 from torchvision.models import resnet18
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -50,6 +51,11 @@ AZURE_ML_WORKSPACE = os.getenv("AZURE_ML_WORKSPACE", "")
 AZURE_ML_SUBSCRIPTION = os.getenv("AZURE_ML_SUBSCRIPTION", "")
 AZURE_ML_RESOURCE_GROUP = os.getenv("AZURE_ML_RESOURCE_GROUP", "")
 LOCAL_MODEL_PATH = os.getenv("LOCAL_MODEL_PATH", "./models")
+
+# Rate limiting: 5 requests per 60 seconds per client IP
+RATE_LIMIT_REQUESTS = 5
+RATE_LIMIT_WINDOW   = 60  # seconds
+_rate_store: Dict[str, list] = defaultdict(list)
 
 # ======================== Models ========================
 
@@ -83,31 +89,58 @@ class DropoutModel(nn.Module):
 
 def load_models_from_azure():
     """
-    Load models from Azure ML Registry
-    In production, this would use MLflow or azureml-core
-    For demo, loads from local path
+    Load trained models from class2/models/.
+    Run class1/Part_2_Overfitting_and_Generalization.ipynb first to generate the .pth files.
+    Falls back to random weights gracefully if files are not found.
     """
-    try:
-        os.makedirs(LOCAL_MODEL_PATH, exist_ok=True)
-        
-        model_v1 = BaselineModel(NUM_CLASSES).to(DEVICE)
-        model_v2 = DropoutModel(NUM_CLASSES).to(DEVICE)
-        
-        # In production, download from Azure ML:
-        # from azureml.core.model import Model
-        # model_path_v1 = Model.get_model_path('adas-model-v1')
-        # model_v1.load_state_dict(torch.load(model_path_v1))
-        
-        model_v1.eval()
-        model_v2.eval()
-        
-        logger.info(f"Models loaded on device: {DEVICE}")
-        logger.info("Note: Using random weights for demo. In production, load from Azure ML Registry.")
-        
-        return model_v1, model_v2
-    except Exception as e:
-        logger.error(f"Error loading models: {str(e)}")
-        raise
+    os.makedirs(LOCAL_MODEL_PATH, exist_ok=True)
+
+    model_v1 = BaselineModel(NUM_CLASSES).to(DEVICE)
+    model_v2 = DropoutModel(NUM_CLASSES).to(DEVICE)
+
+    v1_path = os.path.join(LOCAL_MODEL_PATH, 'v1', 'model.pth')
+    v2_path = os.path.join(LOCAL_MODEL_PATH, 'v2', 'model.pth')
+
+    if os.path.exists(v1_path):
+        model_v1.load_state_dict(torch.load(v1_path, map_location=DEVICE))
+        logger.info(f"Loaded v1 (Baseline) weights from {v1_path}")
+    else:
+        logger.warning(f"v1 weights not found at {v1_path} — using random weights.")
+        logger.warning("Run class1/Part_2_Overfitting_and_Generalization.ipynb to generate model files.")
+
+    if os.path.exists(v2_path):
+        model_v2.load_state_dict(torch.load(v2_path, map_location=DEVICE))
+        logger.info(f"Loaded v2 (Dropout) weights from {v2_path}")
+    else:
+        logger.warning(f"v2 weights not found at {v2_path} — using random weights.")
+
+    model_v1.eval()
+    model_v2.eval()
+
+    logger.info(f"Models ready on device: {DEVICE}")
+    return model_v1, model_v2
+
+
+def check_rate_limit(client_ip: str) -> bool:
+    """
+    Sliding-window rate limiter.
+    Returns True if the request is allowed; False if the limit is exceeded.
+    """
+    now = time.time()
+    window_start = now - RATE_LIMIT_WINDOW
+    _rate_store[client_ip] = [t for t in _rate_store[client_ip] if t > window_start]
+    if len(_rate_store[client_ip]) >= RATE_LIMIT_REQUESTS:
+        return False
+    _rate_store[client_ip].append(now)
+    return True
+
+
+def rate_limit_remaining(client_ip: str) -> int:
+    """Return how many requests remain in the current window."""
+    now = time.time()
+    window_start = now - RATE_LIMIT_WINDOW
+    active = [t for t in _rate_store[client_ip] if t > window_start]
+    return max(0, RATE_LIMIT_REQUESTS - len(active))
 
 
 # ======================== API Schemas ========================
@@ -277,22 +310,36 @@ async def model_info():
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict_with_routing(
+    request: Request,
     file: UploadFile = File(...),
     model_version: Optional[str] = Query(None, description="Force specific model (v1 or v2). If None, uses canary split.")
 ):
     """
     Predict class of uploaded image with optional version selection.
-    
+    Rate-limited to 5 requests per 60 seconds per client IP.
+
     Args:
         file: Image file (JPEG, PNG, GIF, BMP)
         model_version: Optional force to v1 or v2. Default uses canary split.
-    
+
     Returns:
         PredictionResponse with prediction and metrics
     """
+    # Rate limiting
+    client_ip = request.client.host if request.client else "unknown"
+    if not check_rate_limit(client_ip):
+        remaining_secs = int(RATE_LIMIT_WINDOW)
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"Rate limit exceeded: max {RATE_LIMIT_REQUESTS} requests "
+                f"per {RATE_LIMIT_WINDOW}s. Try again shortly."
+            ),
+        )
+
     start_time = time.time()
     image_id = f"{datetime.now().timestamp()}"
-    
+
     try:
         # Validate file type
         file_ext = Path(file.filename).suffix.lower()
