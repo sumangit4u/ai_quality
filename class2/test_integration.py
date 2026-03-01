@@ -18,7 +18,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
 from fastapi.testclient import TestClient
-from api import app
+from class2.Part_1_api import app
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,7 +53,7 @@ def test_images_set():
 @pytest.fixture
 def clear_logs():
     """Clear logs before test and restore after"""
-    from api import prediction_logs
+    from class2.Part_1_api import prediction_logs
     original_logs = prediction_logs.copy()
     prediction_logs.clear()
     yield
@@ -68,7 +68,7 @@ class TestCanaryDeployment:
     
     def test_canary_traffic_distribution(self, test_images_set, clear_logs):
         """Verify traffic is split between v1 and v2"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         num_requests = 100
         for i in range(num_requests):
@@ -95,7 +95,7 @@ class TestCanaryDeployment:
     
     def test_canary_v1_stays_stable(self, test_images_set, clear_logs):
         """V1 should serve majority of traffic"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         for i in range(50):
             img_bytes, filename = test_images_set['blue']
@@ -141,7 +141,7 @@ class TestABTestingIntegration:
     
     def test_ab_test_generates_agreement_metric(self, test_images_set, clear_logs):
         """A/B tests should generate agreement metrics"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         num_tests = 10
         for i in range(num_tests):
@@ -165,7 +165,7 @@ class TestABTestingIntegration:
     
     def test_ab_test_agreement_rate_calculation(self, test_images_set, clear_logs):
         """Agreement rate should be calculated correctly"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         for i in range(5):
             img_bytes, filename = test_images_set['yellow']
@@ -214,7 +214,7 @@ class TestMetricsAndMonitoring:
     
     def test_metrics_track_requests_by_version(self, test_images_set, clear_logs):
         """Metrics should track requests per model version"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         # Make mixed requests
         num_requests = 20
@@ -239,7 +239,7 @@ class TestMetricsAndMonitoring:
     
     def test_metrics_latency_tracking(self, test_images_set, clear_logs):
         """Metrics should track average latency"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         for i in range(10):
             img_bytes, filename = test_images_set['blue']
@@ -269,7 +269,7 @@ class TestMetricsAndMonitoring:
     
     def test_error_rate_tracking(self, clear_logs):
         """Metrics should track error rate"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         # Make some valid requests
         for i in range(5):
@@ -304,7 +304,7 @@ class TestLoggingAndAnalytics:
     
     def test_logs_include_all_metadata(self, test_images_set, clear_logs):
         """Logs should include complete prediction metadata"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         img_bytes, filename = test_images_set['red']
         img_bytes.seek(0)
@@ -422,7 +422,7 @@ class TestDeploymentStrategies:
     
     def test_canary_no_cascade_failure(self, test_images_set, clear_logs):
         """Canary deployment shouldn't cascade failures"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         # Make many requests
         for i in range(30):
@@ -489,7 +489,7 @@ class TestEdgeCasesAndStress:
     
     def test_stress_test_prediction_consistency(self, test_images_set, clear_logs):
         """Same image should produce consistent predictions"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         img_bytes, filename = test_images_set['red']
         
@@ -514,7 +514,7 @@ class TestDataQuality:
     
     def test_confidence_values_valid(self, test_images_set, clear_logs):
         """Confidence values should be between 0 and 1"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         for i in range(10):
             img_bytes, filename = test_images_set['red']
@@ -535,10 +535,10 @@ class TestDataQuality:
     
     def test_predictions_are_valid_classes(self, test_images_set, clear_logs):
         """All predictions should be from valid class list"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         valid_classes = {
-            'animal', 'name_board', 'other_vehicle', 'pedestrian',
+            'animal', 'name_board', 'vehicle', 'pedestrian',
             'pothole', 'road_sign', 'speed_breaker'
         }
         
@@ -563,7 +563,7 @@ class TestPerformanceSLAs:
     
     def test_prediction_latency_sla(self, test_images_set, clear_logs):
         """Predictions should meet latency SLA"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         for i in range(20):
             img_bytes, filename = test_images_set['red']
@@ -599,7 +599,7 @@ class TestPerformanceSLAs:
     
     def test_success_rate_sla(self, test_images_set, clear_logs):
         """API should meet success rate SLA"""
-        from api import prediction_logs
+        from class2.Part_1_api import prediction_logs
         
         successful = 0
         total = 20

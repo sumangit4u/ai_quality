@@ -206,8 +206,8 @@ logger = logging.getLogger(__name__)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CLASS_NAMES = [
-    "animal", "name_board", "other_vehicle", "pedestrian",
-    "pothole", "road_sign", "speed_breaker"
+    "animal", "name_board", "pedestrian", "pothole",
+    "road_sign", "speed_breaker", "vehicle"
 ]
 NUM_CLASSES = len(CLASS_NAMES)
 MODEL_VERSION = "v3.0-secure"

@@ -37,7 +37,7 @@ pip install -r requirements-streamlit.txt
 **Start the API (Terminal 1):**
 ```bash
 cd class2
-uvicorn api:app --reload --port 8000
+uvicorn Part_1_api:app --reload --port 8000
 ```
 You should see `Loaded v1 (Baseline) weights` and `Loaded v2 (Dropout) weights` in the log.
 If the models aren't there yet, it falls back gracefully with a warning.

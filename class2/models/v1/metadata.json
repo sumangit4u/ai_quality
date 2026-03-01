@@ -1,0 +1,19 @@
+{
+  "model_type": "Baseline (No Regularization)",
+  "num_classes": 7,
+  "class_names": [
+    "animal",
+    "name_board",
+    "pedestrian",
+    "pothole",
+    "road_sign",
+    "speed_breaker",
+    "vehicle"
+  ],
+  "test_accuracy_pct": 91.45,
+  "architecture": "ResNet-18",
+  "input_size": [
+    128,
+    128
+  ]
+}

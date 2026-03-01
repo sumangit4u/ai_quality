@@ -17,7 +17,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent))
 
 from fastapi.testclient import TestClient
-from api import app
+from class2.Part_1_api import app
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

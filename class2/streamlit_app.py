@@ -30,7 +30,7 @@ RATE_LIMIT_WINDOW = 60    # mirrors api.py RATE_LIMIT_WINDOW (seconds)
 CLASS_ICONS = {
     "animal":        "🐄",
     "name_board":    "🪧",
-    "other_vehicle": "🚛",
+    "vehicle":       "🚛",
     "pedestrian":    "🚶",
     "pothole":       "🕳️",
     "road_sign":     "🛑",
@@ -177,7 +177,7 @@ with tab_single:
         )
 
         if uploaded:
-            st.image(uploaded, caption="Uploaded image", use_container_width=True)
+            st.image(uploaded, caption="Uploaded image", use_column_width=True)
 
         version_choice = st.radio(
             "Model version",
@@ -275,7 +275,7 @@ with tab_ab:
     )
 
     if ab_upload:
-        st.image(ab_upload, caption="Uploaded image", use_container_width=True)
+        st.image(ab_upload, caption="Uploaded image", use_column_width=True)
 
     ab_btn = st.button("⚖️ Compare Both Models", type="primary", disabled=not ab_upload)
 
