@@ -30,8 +30,7 @@ jobs:
       - name: Run flake8 on test files
         run: |
           flake8 class2/test_part1.py class2/test_part3.py \
-            --max-line-length 120 \
-            --ignore E501,W503,E402
+            --max-line-length 120
 
   test:
     name: Run pytest
